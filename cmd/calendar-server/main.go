@@ -1,6 +1,8 @@
 package main
 
+import "calendar-server/internal/app"
+
 func main() {
-	// TODO application init
-	// TODO application run
+	application := app.New()
+	application.Run()
 }
