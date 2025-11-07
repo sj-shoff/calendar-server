@@ -1,8 +1,17 @@
 package main
 
-import "calendar-server/internal/app"
+import (
+	"calendar-server/internal/app"
+	"calendar-server/pkg/logger/zappretty"
+)
 
 func main() {
-	application := app.New()
-	application.Run()
+	logger := zappretty.SetupLogger()
+
+	application := app.New(logger)
+	if err := application.Run(); err != nil {
+		logger.Fatal("Failed to run application",
+			zappretty.Field("error", err),
+		)
+	}
 }

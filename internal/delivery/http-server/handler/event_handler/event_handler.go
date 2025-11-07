@@ -1,11 +1,12 @@
-package handler
+package event_handler
 
 import (
+	"calendar-server/internal/domain"
 	"calendar-server/pkg/errors"
 	"encoding/json"
+	stdErrors "errors"
 	"net/http"
 
-	"calendar-server/internal/domain"
 	uc "calendar-server/internal/usecase/event_usecase"
 	"calendar-server/pkg/logger/zappretty"
 
@@ -20,12 +21,12 @@ type Response struct {
 
 // EventHandler - обработчик событий
 type EventHandler struct {
-	eventUseCase *uc.EventUseCase
+	eventUseCase uc.EventUseCaseContract
 	logger       *zap.Logger
 }
 
 // NewEventHandler - конструктор обработчика событий
-func NewEventHandler(eventUseCase *uc.EventUseCase, logger *zap.Logger) *EventHandler {
+func NewEventHandler(eventUseCase uc.EventUseCaseContract, logger *zap.Logger) *EventHandler {
 	return &EventHandler{
 		eventUseCase: eventUseCase,
 		logger:       logger,
@@ -45,7 +46,7 @@ func (h *EventHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 		h.logger.Warn("Unsupported media type",
 			zappretty.Field("content_type", r.Header.Get("Content-Type")),
 		)
-		writeError(w, errors.ErrUnsupportedMedia.Error(), http.StatusBadRequest)
+		h.writeError(w, errors.ErrUnsupportedMedia.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -54,7 +55,7 @@ func (h *EventHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 		h.logger.Warn("Invalid JSON format",
 			zappretty.Field("error", err),
 		)
-		writeError(w, errors.ErrInvalidJSON.Error(), http.StatusBadRequest)
+		h.writeError(w, errors.ErrInvalidJSON.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -64,7 +65,7 @@ func (h *EventHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 			zappretty.Field("event_id", event.ID),
 			zappretty.Field("user_id", event.UserID),
 		)
-		handleCalendarError(w, err)
+		h.handleCalendarError(w, err)
 		return
 	}
 
@@ -72,7 +73,7 @@ func (h *EventHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 		zappretty.Field("event_id", event.ID),
 		zappretty.Field("user_id", event.UserID),
 	)
-	writeResponse(w, Response{Result: "event created"})
+	h.writeResponse(w, Response{Result: "event created"})
 }
 
 // UpdateEvent - метод обновления события
@@ -86,14 +87,14 @@ func (h *EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 
 	if r.Header.Get("Content-Type") != "application/json" {
 		h.logger.Warn("Unsupported media type")
-		writeError(w, errors.ErrUnsupportedMedia.Error(), http.StatusBadRequest)
+		h.writeError(w, errors.ErrUnsupportedMedia.Error(), http.StatusBadRequest)
 		return
 	}
 
 	var event domain.Event
 	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
 		h.logger.Warn("Invalid JSON format", zappretty.Field("error", err))
-		writeError(w, errors.ErrInvalidJSON.Error(), http.StatusBadRequest)
+		h.writeError(w, errors.ErrInvalidJSON.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -102,14 +103,14 @@ func (h *EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 			zappretty.Field("error", err),
 			zappretty.Field("event_id", event.ID),
 		)
-		handleCalendarError(w, err)
+		h.handleCalendarError(w, err)
 		return
 	}
 
 	h.logger.Info("Event updated successfully",
 		zappretty.Field("event_id", event.ID),
 	)
-	writeResponse(w, Response{Result: "event updated"})
+	h.writeResponse(w, Response{Result: "event updated"})
 }
 
 // DeleteEvent - метод удаления события
@@ -123,7 +124,7 @@ func (h *EventHandler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 
 	if r.Header.Get("Content-Type") != "application/json" {
 		h.logger.Warn("Unsupported media type")
-		writeError(w, errors.ErrUnsupportedMedia.Error(), http.StatusBadRequest)
+		h.writeError(w, errors.ErrUnsupportedMedia.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -132,7 +133,7 @@ func (h *EventHandler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		h.logger.Warn("Invalid JSON format", zappretty.Field("error", err))
-		writeError(w, errors.ErrInvalidJSON.Error(), http.StatusBadRequest)
+		h.writeError(w, errors.ErrInvalidJSON.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -141,14 +142,14 @@ func (h *EventHandler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 			zappretty.Field("error", err),
 			zappretty.Field("event_id", request.ID),
 		)
-		handleCalendarError(w, err)
+		h.handleCalendarError(w, err)
 		return
 	}
 
 	h.logger.Info("Event deleted successfully",
 		zappretty.Field("event_id", request.ID),
 	)
-	writeResponse(w, Response{Result: "event deleted"})
+	h.writeResponse(w, Response{Result: "event deleted"})
 }
 
 // EventsForDay - метод получения событий за день
@@ -167,7 +168,7 @@ func (h *EventHandler) EventsForDay(w http.ResponseWriter, r *http.Request) {
 
 	if userID == "" || date == "" {
 		h.logger.Warn("Missing parameters for events for day")
-		writeError(w, errors.ErrMissingParameters.Error(), http.StatusBadRequest)
+		h.writeError(w, errors.ErrMissingParameters.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -178,7 +179,7 @@ func (h *EventHandler) EventsForDay(w http.ResponseWriter, r *http.Request) {
 			zappretty.Field("user_id", userID),
 			zappretty.Field("date", date),
 		)
-		handleCalendarError(w, err)
+		h.handleCalendarError(w, err)
 		return
 	}
 
@@ -187,7 +188,7 @@ func (h *EventHandler) EventsForDay(w http.ResponseWriter, r *http.Request) {
 		zappretty.Field("date", date),
 		zappretty.Field("count", len(events)),
 	)
-	writeResponse(w, Response{Result: events})
+	h.writeResponse(w, Response{Result: events})
 }
 
 // EventsForWeek - метод получения событий за неделю
@@ -206,7 +207,7 @@ func (h *EventHandler) EventsForWeek(w http.ResponseWriter, r *http.Request) {
 
 	if userID == "" || date == "" {
 		h.logger.Warn("Missing parameters for events for week")
-		writeError(w, errors.ErrMissingParameters.Error(), http.StatusBadRequest)
+		h.writeError(w, errors.ErrMissingParameters.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -217,7 +218,7 @@ func (h *EventHandler) EventsForWeek(w http.ResponseWriter, r *http.Request) {
 			zappretty.Field("user_id", userID),
 			zappretty.Field("date", date),
 		)
-		handleCalendarError(w, err)
+		h.handleCalendarError(w, err)
 		return
 	}
 
@@ -226,7 +227,7 @@ func (h *EventHandler) EventsForWeek(w http.ResponseWriter, r *http.Request) {
 		zappretty.Field("date", date),
 		zappretty.Field("count", len(events)),
 	)
-	writeResponse(w, Response{Result: events})
+	h.writeResponse(w, Response{Result: events})
 }
 
 // EventsForMonth - метод получения событий за месяц
@@ -245,7 +246,7 @@ func (h *EventHandler) EventsForMonth(w http.ResponseWriter, r *http.Request) {
 
 	if userID == "" || date == "" {
 		h.logger.Warn("Missing parameters for events for month")
-		writeError(w, errors.ErrMissingParameters.Error(), http.StatusBadRequest)
+		h.writeError(w, errors.ErrMissingParameters.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -256,7 +257,7 @@ func (h *EventHandler) EventsForMonth(w http.ResponseWriter, r *http.Request) {
 			zappretty.Field("user_id", userID),
 			zappretty.Field("date", date),
 		)
-		handleCalendarError(w, err)
+		h.handleCalendarError(w, err)
 		return
 	}
 
@@ -265,39 +266,45 @@ func (h *EventHandler) EventsForMonth(w http.ResponseWriter, r *http.Request) {
 		zappretty.Field("date", date),
 		zappretty.Field("count", len(events)),
 	)
-	writeResponse(w, Response{Result: events})
+	h.writeResponse(w, Response{Result: events})
 }
 
 // handleCalendarError - обработчик ошибок календаря
-func handleCalendarError(w http.ResponseWriter, err error) {
-	switch err {
-	case errors.ErrEventNotFound:
-		writeError(w, err.Error(), http.StatusServiceUnavailable)
+func (h *EventHandler) handleCalendarError(w http.ResponseWriter, err error) {
+	switch {
+	case stdErrors.Is(err, errors.ErrEventNotFound):
+		h.writeError(w, err.Error(), http.StatusServiceUnavailable)
 
-	case errors.ErrInvalidDate,
-		errors.ErrEmptyEventID,
-		errors.ErrEmptyUserID,
-		errors.ErrEmptyTitle:
-		writeError(w, err.Error(), http.StatusBadRequest)
+	case stdErrors.Is(err, errors.ErrInvalidDate),
+		stdErrors.Is(err, errors.ErrEmptyEventID),
+		stdErrors.Is(err, errors.ErrEmptyUserID),
+		stdErrors.Is(err, errors.ErrEmptyTitle):
+		h.writeError(w, err.Error(), http.StatusBadRequest)
 
-	case errors.ErrEventConflict:
-		writeError(w, err.Error(), http.StatusConflict)
+	case stdErrors.Is(err, errors.ErrEventConflict):
+		h.writeError(w, err.Error(), http.StatusConflict)
 
 	default:
-		writeError(w, "internal server error", http.StatusInternalServerError)
+		h.writeError(w, "internal server error", http.StatusInternalServerError)
 	}
 }
 
 // writeResponse - функция для записи ответа
-func writeResponse(w http.ResponseWriter, response Response) {
+func (h *EventHandler) writeResponse(w http.ResponseWriter, response Response) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		h.logger.Error("Failed to encode response", zap.Error(err))
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
 }
 
 // writeError - функция для записи ошибки
-func writeError(w http.ResponseWriter, errorMsg string, statusCode int) {
+func (h *EventHandler) writeError(w http.ResponseWriter, errorMsg string, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(Response{Error: errorMsg})
+	if err := json.NewEncoder(w).Encode(Response{Error: errorMsg}); err != nil {
+		h.logger.Error("Failed to encode error response", zap.Error(err))
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
 }

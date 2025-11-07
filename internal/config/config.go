@@ -5,11 +5,13 @@ import (
 	"os"
 )
 
+// Config представляет конфигурацию приложения
 type Config struct {
 	Port        string
 	Environment string
 }
 
+// MustLoad загружает конфигурацию из переменных окружения и флагов
 func MustLoad() *Config {
 	cfg := &Config{}
 

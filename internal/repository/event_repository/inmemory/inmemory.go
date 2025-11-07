@@ -13,12 +13,14 @@ import (
 	"go.uber.org/zap"
 )
 
+// EventRepository - реализация хранилища событий в памяти
 type EventRepository struct {
 	mu     sync.RWMutex
 	events map[string]domain.Event
 	logger *zap.Logger
 }
 
+// NewEventRepository - конструктор хранилища событий в памяти
 func NewEventRepository(logger *zap.Logger) *EventRepository {
 	return &EventRepository{
 		events: make(map[string]domain.Event),
@@ -26,6 +28,7 @@ func NewEventRepository(logger *zap.Logger) *EventRepository {
 	}
 }
 
+// Create - создание события
 func (r *EventRepository) Create(ctx context.Context, event domain.Event) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -53,6 +56,7 @@ func (r *EventRepository) Create(ctx context.Context, event domain.Event) error 
 	return nil
 }
 
+// Update - обновление события
 func (r *EventRepository) Update(ctx context.Context, event domain.Event) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -79,6 +83,7 @@ func (r *EventRepository) Update(ctx context.Context, event domain.Event) error 
 	return nil
 }
 
+// Delete - удаление события
 func (r *EventRepository) Delete(ctx context.Context, eventID string) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -105,6 +110,7 @@ func (r *EventRepository) Delete(ctx context.Context, eventID string) error {
 	return nil
 }
 
+// GetByUserIDAndDate - получение событий по ID пользователя и дате
 func (r *EventRepository) GetByUserIDAndDate(ctx context.Context, userID, date string) ([]domain.Event, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -124,6 +130,7 @@ func (r *EventRepository) GetByUserIDAndDate(ctx context.Context, userID, date s
 	return events, nil
 }
 
+// GetByUserIDAndWeek - получение событий по ID пользователя и неделе
 func (r *EventRepository) GetByUserIDAndWeek(ctx context.Context, userID, date string) ([]domain.Event, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -156,6 +163,7 @@ func (r *EventRepository) GetByUserIDAndWeek(ctx context.Context, userID, date s
 	return events, nil
 }
 
+// GetByUserIDAndMonth - получение событий по ID пользователя и месяцу
 func (r *EventRepository) GetByUserIDAndMonth(ctx context.Context, userID, date string) ([]domain.Event, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err

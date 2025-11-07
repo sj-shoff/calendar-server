@@ -26,9 +26,8 @@ type App struct {
 }
 
 // New создает новый экземпляр App
-func New() *App {
+func New(logger *zap.Logger) *App {
 	cfg := config.MustLoad()
-	logger := zappretty.SetupLogger()
 
 	eventRepo := repository.NewEventRepository(logger)
 

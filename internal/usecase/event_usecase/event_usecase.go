@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// EventUseCaseContract - контракт для работы с событиями
 type EventUseCaseContract interface {
 	CreateEvent(ctx context.Context, event domain.Event) error
 	UpdateEvent(ctx context.Context, event domain.Event) error
@@ -19,11 +20,13 @@ type EventUseCaseContract interface {
 	GetEventsForMonth(ctx context.Context, userID, date string) ([]domain.Event, error)
 }
 
+// EventUseCase - реализация EventUseCaseContract
 type EventUseCase struct {
 	repo   repo.EventRepository
 	logger *zap.Logger
 }
 
+// NewEventUseCase - конструктор EventUseCase
 func NewEventUseCase(repo repo.EventRepository, logger *zap.Logger) *EventUseCase {
 	return &EventUseCase{
 		repo:   repo,
@@ -31,6 +34,7 @@ func NewEventUseCase(repo repo.EventRepository, logger *zap.Logger) *EventUseCas
 	}
 }
 
+// CreateEvent - метод создания события
 func (uc *EventUseCase) CreateEvent(ctx context.Context, event domain.Event) error {
 	uc.logger.Debug("Creating event in usecase",
 		zappretty.Field("event_id", event.ID),
@@ -53,6 +57,7 @@ func (uc *EventUseCase) CreateEvent(ctx context.Context, event domain.Event) err
 	return uc.repo.Create(ctx, event)
 }
 
+// UpdateEvent - метод обновления события
 func (uc *EventUseCase) UpdateEvent(ctx context.Context, event domain.Event) error {
 	uc.logger.Debug("Updating event in usecase",
 		zappretty.Field("event_id", event.ID),
@@ -74,6 +79,7 @@ func (uc *EventUseCase) UpdateEvent(ctx context.Context, event domain.Event) err
 	return uc.repo.Update(ctx, event)
 }
 
+// DeleteEvent - метод удаления события
 func (uc *EventUseCase) DeleteEvent(ctx context.Context, eventID string) error {
 	uc.logger.Debug("Deleting event in usecase",
 		zappretty.Field("event_id", eventID),
@@ -92,6 +98,7 @@ func (uc *EventUseCase) DeleteEvent(ctx context.Context, eventID string) error {
 	return uc.repo.Delete(ctx, eventID)
 }
 
+// GetEventsForDay - метод получения событий для конкретной даты
 func (uc *EventUseCase) GetEventsForDay(ctx context.Context, userID, date string) ([]domain.Event, error) {
 	uc.logger.Debug("Getting events for day in usecase",
 		zappretty.Field("user_id", userID),
@@ -115,6 +122,7 @@ func (uc *EventUseCase) GetEventsForDay(ctx context.Context, userID, date string
 	return uc.repo.GetByUserIDAndDate(ctx, userID, date)
 }
 
+// GetEventsForWeek - метод получения событий за неделю
 func (uc *EventUseCase) GetEventsForWeek(ctx context.Context, userID, date string) ([]domain.Event, error) {
 	uc.logger.Debug("Getting events for week in usecase",
 		zappretty.Field("user_id", userID),
@@ -135,6 +143,7 @@ func (uc *EventUseCase) GetEventsForWeek(ctx context.Context, userID, date strin
 	return uc.repo.GetByUserIDAndWeek(ctx, userID, date)
 }
 
+// GetEventsForMonth - метод получения событий за месяц
 func (uc *EventUseCase) GetEventsForMonth(ctx context.Context, userID, date string) ([]domain.Event, error) {
 	uc.logger.Debug("Getting events for month in usecase",
 		zappretty.Field("user_id", userID),
